@@ -1,0 +1,141 @@
+\documentclass[margin={17pt 0pt 17pt 17pt}]{standalone}
+\renewcommand{\arraystretch}{4}
+\setlength{\tabcolsep}{\dimexpr\ht\strutbox}
+
+\usepackage{xparse}
+\usepackage{expl3}
+
+\ExplSyntaxOn
+
+\cs_new:Nn \if_intersects:nnTF {
+  \tl_set:Nn \l_tmpa_tl {#1}
+  \bool_set_false:N \bool_tmpa_l
+  \tl_map_inline:nn {#2} {
+    \tl_if_in:NnTF \l_tmpa_tl {##1} {
+      \tl_map_break:n { \bool_set_true:N \bool_tmpa_l }
+    } {}
+  }
+  \bool_if:NTF \bool_tmpa_l { #3 } { #4 }
+}
+
+\NewDocumentCommand{\IfIntersects}{mmmm}{
+  \if_intersects:nnTF {#1} {#2} {#3} {#4}
+}
+
+\ExplSyntaxOff
+
+\usepackage{tikz}
+
+\tikzset{
+  maybedashed/.code n args={2}{\IfIntersects{#1}{#2}{\pgfqkeys{/tikz}{dashed}}{\pgfqkeys{/tikz}{solid}}}
+}
+
+\NewDocumentCommand{\DrawCube}{m}{
+  \begin{tikzpicture}
+    % We fix a canonical ordering for faces: BLDRUF
+    % It is determined by grouping faces in back-to-front drawing layers    (B)(LD)(RUF)
+    % and ordering each group by the axis normal to the face.               (z)(xy)(xyz)
+    % A useful mnemonic to remember this is 'BUILD A ROOF'!
+
+    % Each vertex is determined by the intersection of three faces.
+    \coordinate (BLD) at (0,0);
+    \coordinate (BLU) at (0,1);
+    \coordinate (BDR) at (1,0);
+    \coordinate (BRU) at (1,1);
+    \coordinate (LDF) at (0-.5,0-.5);
+    \coordinate (LUF) at (0-.5,1-.5);
+    \coordinate (DRF) at (1-.5,0-.5);
+    \coordinate (RUF) at (1-.5,1-.5);
+
+    % Each faces is determined by the vertices it contains.
+    \IfIntersects{#1}{B}{ \fill[opacity=0.2] (BLD) -- (BLU) -- (BRU) -- (BDR); }{}
+    \IfIntersects{#1}{L}{ \fill[opacity=0.2] (BLD) -- (BLU) -- (LUF) -- (LDF); }{}
+    \IfIntersects{#1}{D}{ \fill[opacity=0.2] (BLD) -- (BDR) -- (DRF) -- (LDF); }{}
+    \IfIntersects{#1}{R}{ \fill[opacity=0.2] (BDR) -- (BRU) -- (RUF) -- (DRF); }{}
+    \IfIntersects{#1}{U}{ \fill[opacity=0.2] (BLU) -- (BRU) -- (RUF) -- (LUF); }{}
+    \IfIntersects{#1}{F}{ \fill[opacity=0.2] (LDF) -- (LUF) -- (RUF) -- (DRF); }{}
+
+    % Each edge is determined by the intersection of two faces.
+    \IfIntersects{#1}{BL}{ \draw (BLU |- LUF) edge[maybedashed={#1}{F}] (BLD) edge[maybedashed={#1}{U}] (BLU); }{}
+    \IfIntersects{#1}{BD}{ \draw (BDR -| RUF) edge[maybedashed={#1}{F}] (BLD) edge[maybedashed={#1}{R}] (BDR); }{}
+    \IfIntersects{#1}{LD}{ \draw (BLD) edge[maybedashed={#1}{F}] (LDF); }{}
+    \IfIntersects{#1}{BU}{ \draw (BLU) -- (BRU); }{}
+    \IfIntersects{#1}{LU}{ \draw (BLU) -- (LUF); }{}
+    \IfIntersects{#1}{BR}{ \draw (BDR) -- (BRU); }{}
+    \IfIntersects{#1}{DR}{ \draw (BDR) -- (DRF); }{}
+    \IfIntersects{#1}{RU}{ \draw (BRU) -- (RUF); }{}
+    \IfIntersects{#1}{LF}{ \draw (LDF) -- (LUF); }{}
+    \IfIntersects{#1}{DF}{ \draw (LDF) -- (DRF); }{}
+    \IfIntersects{#1}{UF}{ \draw (LUF) -- (RUF); }{}
+    \IfIntersects{#1}{RF}{ \draw (DRF) -- (RUF); }{}
+  \end{tikzpicture}
+}
+
+\begin{document}
+\begin{tabular}{@{}cccccccc@{}}
+&
+\DrawCube{B}&
+\DrawCube{L}&
+\DrawCube{BL}&
+\DrawCube{D}&
+\DrawCube{BD}&
+\DrawCube{LD}&
+\DrawCube{BLD}\\
+\DrawCube{R}&
+\DrawCube{BR}&
+\DrawCube{LR}&
+\DrawCube{BLR}&
+\DrawCube{DR}&
+\DrawCube{BDR}&
+\DrawCube{LDR}&
+\DrawCube{BLDR}\\
+\DrawCube{U}&
+\DrawCube{BU}&
+\DrawCube{LU}&
+\DrawCube{BLU}&
+\DrawCube{DU}&
+\DrawCube{BDU}&
+\DrawCube{LDU}&
+\DrawCube{BLDU}\\
+\DrawCube{RU}&
+\DrawCube{BRU}&
+\DrawCube{LRU}&
+\DrawCube{BLRU}&
+\DrawCube{DRU}&
+\DrawCube{BDRU}&
+\DrawCube{LDRU}&
+\DrawCube{BLDRU}\\
+\DrawCube{F}&
+\DrawCube{BF}&
+\DrawCube{LF}&
+\DrawCube{BLF}&
+\DrawCube{DF}&
+\DrawCube{BDF}&
+\DrawCube{LDF}&
+\DrawCube{BLDF}\\
+\DrawCube{RF}&
+\DrawCube{BRF}&
+\DrawCube{LRF}&
+\DrawCube{BLRF}&
+\DrawCube{DRF}&
+\DrawCube{BDRF}&
+\DrawCube{LDRF}&
+\DrawCube{BLDRF}\\
+\DrawCube{UF}&
+\DrawCube{BUF}&
+\DrawCube{LUF}&
+\DrawCube{BLUF}&
+\DrawCube{DUF}&
+\DrawCube{BDUF}&
+\DrawCube{LDUF}&
+\DrawCube{BLDUF}\\
+\DrawCube{RUF}&
+\DrawCube{BRUF}&
+\DrawCube{LRUF}&
+\DrawCube{BLRUF}&
+\DrawCube{DRUF}&
+\DrawCube{BDRUF}&
+\DrawCube{LDRUF}&
+\DrawCube{BLDRUF}\\
+\end{tabular}
+\end{document}
